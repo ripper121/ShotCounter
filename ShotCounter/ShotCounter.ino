@@ -1,43 +1,50 @@
 #include "Wire.h"
 #include "MPU9250.h"
-#include <Wire.h>
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiWire.h"
-
-// 0X3C+SA0 - 0x3C or 0x3D
+#include "Adafruit_Sensor.h"
+#include "Adafruit_BME280.h"
 #define I2C_ADDRESS 0x3C
 
-SSD1306AsciiWire oled;
-
-
-// class default I2C address is 0x68
-MPU9250 accel;
 I2Cdev   I2C_M;
+Adafruit_BME280 bme;
+SSD1306AsciiWire oled;
+MPU9250 accel;
 
 uint8_t buffer_m[6];
-
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
 int16_t mx, my, mz;
 int16_t shotCount;
-
 float Axyz[3], sumAxyz, maxAxyz;
+
 void setup() {
   Wire.begin();
-  Serial.begin(250000);
   oled.begin(&Adafruit128x64, I2C_ADDRESS);
   oled.set400kHz();
   oled.setFont(Adafruit5x7);
   accel.initialize();
   oled.clear();
   oled.setCursor(0, 0);
-  oled.println("MPU6050");
-  if (accel.testConnection()) {
-    oled.println("Connected");
+  oled.println("HW-Init");
+  if (accel.testConnection() && bme.begin()) {
+    oled.println("OK");
   } else {
     oled.println("Failed");
   }
   delay(1000);
+  oled.clear();
+  oled.setCursor(0, 0);
+  oled.println("Temperature");
+  oled.print(bme.readTemperature());
+  oled.println(" *C");
+  oled.println("Pressure");
+  oled.print(bme.readPressure() / 100.0F);
+  oled.println(" hPa");
+  oled.println("Humidity");
+  oled.print(bme.readHumidity());
+  oled.println(" %");
+  delay(5000);
   oled.clear();
 }
 
@@ -51,15 +58,15 @@ void loop()
   if (sumAxyz > maxAxyz) {
     maxAxyz = sumAxyz;
   }
-  if(sumAxyz>2){
+  if (sumAxyz > 2) {
     shotCount++;
     delay(50);
   }
   oled.setCursor(0, 0);
   oled.println("Shot Count:");
-  oled.print(shotCount);oled.println(" shots ");
-  oled.println("Sum: ");
-  oled.print(sumAxyz);oled.print(" g ");
-  oled.print(maxAxyz);oled.println(" g ");
-  Serial.println(sumAxyz);
+  oled.print(shotCount); oled.println(" shots ");
+  oled.println("Acceleration: ");
+  oled.print(sumAxyz); oled.println(" g ");
+  oled.println("Max: ");
+  oled.print(maxAxyz); oled.println(" g ");
 }
